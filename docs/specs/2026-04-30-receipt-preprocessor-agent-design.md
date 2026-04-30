@@ -284,7 +284,7 @@ async function preprocessAndUpload(images: ImageInput[]) {
 | ------------- | ------------------------------------------------------------------- |
 | 단위          | 각 tool 함수 `pytest` 독립 테스트 (Gemini 응답 mock 사용)           |
 | 에이전트 통합 | `adk run receipt_preprocessor`로 실제 이미지 입력 후 세션 상태 검증 |
-| 엔드투엔드    | `test_client/remote_test.py`로 A2A 서버에 거절 케이스별 이미지 전송  |
+| 엔드투엔드    | `test_client/remote_test.py`로 A2A 서버에 거절 케이스별 이미지 전송 |
 | 모바일 연동   | Staging 환경에서 앱 → 에이전트 → Azure 전체 체인 수동 검증          |
 
 **테스트 픽스처 이미지 카테고리:**

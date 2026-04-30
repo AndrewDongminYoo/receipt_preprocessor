@@ -49,7 +49,7 @@ def score_image_quality(tool_context: ToolContext) -> dict:
             genai_types.Part.from_uri(file_uri=image_uri, mime_type=mime_type),
             """Evaluate this receipt image quality for OCR processing. Score 0-10 (10 = perfect).
 
-Identify issues from this list only: "blur", "overexposed", "underexposed", "occluded", "low_res", "wrinkled"
+Identify issues from this list only: "blur", "overexposed", "underexposed", "occluded", "low_res"
 
 Respond ONLY with valid JSON, no markdown:
 {

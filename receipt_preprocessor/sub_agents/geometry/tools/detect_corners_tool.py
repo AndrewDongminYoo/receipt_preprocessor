@@ -1,20 +1,12 @@
 import json
 import mimetypes
-import re
 
 import google.genai as genai
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types as genai_types
 
 from receipt_preprocessor import config
-
-
-def _extract_json(text: str) -> dict:
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        return json.loads(match.group())
-    text = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`").strip()
-    return json.loads(text)
+from receipt_preprocessor.tools.json_utils import extract_json
 
 
 def detect_corners(tool_context: ToolContext) -> dict:
@@ -48,6 +40,6 @@ If the receipt fills the entire frame OR corners cannot be reliably determined, 
     )
 
     try:
-        return _extract_json(response.text)
+        return extract_json(response.text)
     except (json.JSONDecodeError, AttributeError):
         return {"corners": None}

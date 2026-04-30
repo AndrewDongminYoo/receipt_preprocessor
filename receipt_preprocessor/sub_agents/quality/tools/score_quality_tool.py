@@ -1,26 +1,18 @@
 import json
 import mimetypes
-import re
 
 import google.genai as genai
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types as genai_types
 
 from receipt_preprocessor import config
+from receipt_preprocessor.tools.json_utils import extract_json
 
 _FALLBACK_RESPONSE = {
     "score": 0,
     "issues": ["parse_error"],
     "reason": "Gemini response could not be parsed",
 }
-
-
-def _extract_json(text: str) -> dict:
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        return json.loads(match.group())
-    text = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`").strip()
-    return json.loads(text)
 
 
 def score_image_quality(tool_context: ToolContext) -> dict:
@@ -61,7 +53,7 @@ Respond ONLY with valid JSON, no markdown:
     )
 
     try:
-        result = _extract_json(response.text)
+        result = extract_json(response.text)
         score = int(result.get("score", 0))
         issues = result.get("issues", [])
     except (json.JSONDecodeError, AttributeError, ValueError):

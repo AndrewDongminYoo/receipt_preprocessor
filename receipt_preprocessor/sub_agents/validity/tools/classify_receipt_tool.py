@@ -1,13 +1,17 @@
 import json
 import mimetypes
 import os
-import re
 
 import google.genai as genai
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types as genai_types
 
 from receipt_preprocessor import config
+from receipt_preprocessor.tools.json_utils import extract_json
+
+_POLICY_PATH = os.path.join(os.path.dirname(__file__), "../../../policy.json")
+with open(_POLICY_PATH) as _f:
+    _POLICY = json.load(_f)
 
 _FALLBACK_RESPONSE = {
     "type": "NON_RECEIPT",
@@ -15,16 +19,6 @@ _FALLBACK_RESPONSE = {
     "confidence": 0.0,
     "reason": "Gemini response could not be parsed",
 }
-
-
-def _extract_json(text: str) -> dict:
-    # First try to locate a JSON object directly (handles preamble text and single backticks)
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        return json.loads(match.group())
-    # Fall back to stripping triple-backtick fences
-    text = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`").strip()
-    return json.loads(text)
 
 
 def classify_receipt(tool_context: ToolContext) -> dict:
@@ -42,10 +36,6 @@ def classify_receipt(tool_context: ToolContext) -> dict:
             "reason": "No image URI in session state",
         }
 
-    policy_path = os.path.join(os.path.dirname(__file__), "../../../policy.json")
-    with open(policy_path) as f:
-        policy = json.load(f)
-
     mime_type = mimetypes.guess_type(image_uri)[0] or "image/jpeg"
 
     client = genai.Client()
@@ -55,8 +45,8 @@ def classify_receipt(tool_context: ToolContext) -> dict:
             genai_types.Part.from_uri(file_uri=image_uri, mime_type=mime_type),
             f"""Classify this image as a receipt for the 영끌 Korean retail reward app.
 
-Domestic retail keywords (DOMESTIC_RETAIL): {policy['retail_keywords_ko']}
-Overseas indicators (OVERSEAS): {policy['overseas_indicators']}
+Domestic retail keywords (DOMESTIC_RETAIL): {_POLICY['retail_keywords_ko']}
+Overseas indicators (OVERSEAS): {_POLICY['overseas_indicators']}
 
 Classify as:
 - DOMESTIC_RETAIL: Korean mart, convenience store, or supermarket receipt
@@ -75,7 +65,7 @@ Respond ONLY with valid JSON, no markdown:
     )
 
     try:
-        result = _extract_json(response.text)
+        result = extract_json(response.text)
         receipt_type = result.get("type", "NON_RECEIPT")
         store_category = result.get("store_category", "OTHER")
     except (json.JSONDecodeError, AttributeError):

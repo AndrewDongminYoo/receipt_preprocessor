@@ -1,12 +1,47 @@
 {
-  "General Guidelines": "It should not  violate any content restrictions (especially regarding humans, politics, religion, violence etc.).",
-  "Global Defaults": "Defines the default values for various resource templates and specifications. This includes defaults for image, video, and text content, composition style, color scheme, OEM, and region.",
-  "Media Type Definitions": "Provides detailed specifications and guidelines for different media types, including images, videos, and text. Each media type has a unique ID, name, and description, along with technical specifications, content guidelines, and validation rules.",
-  "Image Specifications and Guidelines": "Images should have a premium, high-quality appearance and be appropriate for all audiences. Positive attributes include high resolution, photorealistic, and detailed qualities, while negative attributes include low quality, pixelation, and distortion.",
-  "Text Specifications and Guidelines": "Specifies text content requirements for headlines, notifications, and descriptions, including supported file formats (txt, json), headline length (80 characters), notification length (120 characters), description length (300 characters), and encoding (UTF-8). Text should be concise and impactful, be appropriate for all audiences, and avoid clickbait or misleading claims. Positive attributes include concise, clear, and engaging qualities, while negative attributes include clickbait, misleading, and grammatical errors.",
-  "Clock Visibility": "Ensures clock visibility against content by maintaining adequate spacing, ensuring sufficient contrast, and avoiding placing important elements in the clock display area.",
-  "Notification Area": "Keeps the top portion relatively clear, avoids complex patterns in notification areas, and ensures adequate contrast for notification text.",
-  "Safe Zones": "Keeps areas free of important content to prevent cropping, with specified zone percentages for the top (25%), bottom (15%), left (5%), and right (5%).",
-  "Composition Styles": "Provides different composition styles to make lockscreen content visually appealing. It defines multiple different styles with its description, effect and other parameter.",
-  "Color Scheme Definitions": "Standards for color usage, combinations, and schemes in lockscreen content. It ensures sufficient contrast for  visibility and to create harmonious color relationships. Color schemes include monochrome, analogous, complementary, black and white, and natural."
+  "allowed_store_categories": ["MART", "CONVENIENCE", "SUPERMARKET"],
+  "retail_keywords_ko": [
+    "이마트",
+    "홈플러스",
+    "롯데마트",
+    "코스트코",
+    "메가마트",
+    "킴스클럽",
+    "GS25",
+    "CU",
+    "세븐일레븐",
+    "미니스톱",
+    "이마트24",
+    "편의점",
+    "수퍼마켓",
+    "슈퍼마켓",
+    "마트",
+    "할인점"
+  ],
+  "overseas_indicators": [
+    "USD",
+    "EUR",
+    "JPY",
+    "CNY",
+    "GBP",
+    "AUD",
+    "CAD",
+    "SUBTOTAL",
+    "CHANGE DUE",
+    "AMOUNT DUE",
+    "RECEIPT NO",
+    "STORE NO",
+    "GST",
+    "TOTAL TAX"
+  ],
+  "non_receipt_indicators": [
+    "business card",
+    "menu",
+    "invoice",
+    "contract",
+    "license",
+    "passport",
+    "id card",
+    "certificate"
+  ]
 }

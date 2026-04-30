@@ -14,12 +14,16 @@ STAGING_BUCKET = f"gs://{os.getenv('GCS_BUCKET_NAME')}"
 
 client = vertexai.Client(project=PROJECT_ID, location=LOCATION)
 
+_req_path = os.path.join(os.path.dirname(__file__), "..", "requirements.txt")
+with open(_req_path) as f:
+    _base_requirements = f.readlines()
+
 remote_app = client.agent_engines.create(
     agent=root_agent,
     config={
         "display_name": "receipt-preprocessor",
         "staging_bucket": STAGING_BUCKET,
-        "requirements": open(os.path.join(os.getcwd(), "requirements.txt")).readlines()
+        "requirements": _base_requirements
         + ["./dist/receipt_preprocessor-0.1.0-py3-none-any.whl"],
         "extra_packages": ["./dist/receipt_preprocessor-0.1.0-py3-none-any.whl"],
         "env_vars": {

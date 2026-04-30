@@ -1,5 +1,18 @@
+import mimetypes
+
 from google.api_core.exceptions import GoogleAPICallError
 from google.cloud import storage
+from google.genai import types as genai_types
+
+
+def make_image_part(image_uri: str) -> genai_types.Part:
+    """Returns a Gemini Part for a GCS URI, HTTPS URL, or local file path."""
+    mime_type = mimetypes.guess_type(image_uri)[0] or "image/jpeg"
+    if image_uri.startswith(("gs://", "http://", "https://")):
+        return genai_types.Part.from_uri(file_uri=image_uri, mime_type=mime_type)
+    with open(image_uri, "rb") as f:
+        data = f.read()
+    return genai_types.Part.from_bytes(data=data, mime_type=mime_type)
 
 
 def download_from_gcs(gcs_uri: str) -> bytes:

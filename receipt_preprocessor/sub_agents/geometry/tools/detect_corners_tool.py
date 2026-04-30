@@ -1,11 +1,10 @@
 import json
-import mimetypes
 
 import google.genai as genai
 from google.adk.tools.tool_context import ToolContext
-from google.genai import types as genai_types
 
 from receipt_preprocessor import config
+from receipt_preprocessor.tools.gcs_utils import make_image_part
 from receipt_preprocessor.tools.json_utils import extract_json
 
 
@@ -19,13 +18,11 @@ def detect_corners(tool_context: ToolContext) -> dict:
     if not image_uri:
         return {"corners": None}
 
-    mime_type = mimetypes.guess_type(image_uri)[0] or "image/jpeg"
-
     client = genai.Client()
     response = client.models.generate_content(
         model=config.GENAI_MODEL,
         contents=[
-            genai_types.Part.from_uri(file_uri=image_uri, mime_type=mime_type),
+            make_image_part(image_uri),
             """Identify the 4 corner pixel coordinates of the receipt document in this image.
 
 Coordinate origin (0,0) is at the top-left of the image.

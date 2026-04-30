@@ -1,11 +1,10 @@
 import json
-import mimetypes
 
 import google.genai as genai
 from google.adk.tools.tool_context import ToolContext
-from google.genai import types as genai_types
 
 from receipt_preprocessor import config
+from receipt_preprocessor.tools.gcs_utils import make_image_part
 from receipt_preprocessor.tools.json_utils import extract_json
 
 _FALLBACK_RESPONSE = {
@@ -32,13 +31,11 @@ def score_image_quality(tool_context: ToolContext) -> dict:
         tool_context.state["quality_issues"] = ["no_image"]
         return result
 
-    mime_type = mimetypes.guess_type(image_uri)[0] or "image/jpeg"
-
     client = genai.Client()
     response = client.models.generate_content(
         model=config.GENAI_MODEL,
         contents=[
-            genai_types.Part.from_uri(file_uri=image_uri, mime_type=mime_type),
+            make_image_part(image_uri),
             """Evaluate this receipt image quality for OCR processing. Score 0-10 (10 = perfect).
 
 Identify issues from this list only: "blur", "overexposed", "underexposed", "occluded", "low_res"

@@ -2,16 +2,25 @@ from google.adk.tools.tool_context import ToolContext
 
 
 def build_azure_payload(tool_context: ToolContext) -> dict:
-    """Assembles the final payload to be sent to Azure OCR.
+    """Assembles the final payload for Azure OCR.
 
-    Reads corrected_image_uri (falls back to original_image_uri), store_category,
-    session_id, quality_score, and geometry_corrected from session state.
-    Writes azure_payload to session state.
+    Returns a REJECT payload if rejection_code is set in state (upstream gate
+    already rejected), otherwise returns a PASS payload.
+    Writes azure_payload to session state in both cases.
     """
+    rejection_code = tool_context.state.get("rejection_code")
+    if rejection_code:
+        payload = {
+            "status": "REJECT",
+            "code": rejection_code,
+            "userMessage": tool_context.state.get("rejection_message", ""),
+        }
+        tool_context.state["azure_payload"] = payload
+        return payload
+
     corrected_uri = tool_context.state.get(
         "corrected_image_uri"
     ) or tool_context.state.get("original_image_uri")
-
     payload = {
         "status": "PASS",
         "correctedImageUrl": corrected_uri,

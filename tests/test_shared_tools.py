@@ -75,3 +75,57 @@ def test_download_gcs_api_error_raises_runtime():
         )
         with pytest.raises(RuntimeError, match="GCS download failed"):
             download_from_gcs("gs://my-bucket/missing.jpg")
+
+
+def test_make_image_part_uses_from_uri_for_gcs():
+    from unittest.mock import patch as _patch
+
+    from receipt_preprocessor.tools.gcs_utils import make_image_part
+
+    with _patch("receipt_preprocessor.tools.gcs_utils.genai_types.Part") as mock_part:
+        make_image_part("gs://bucket/img.jpg")
+        mock_part.from_uri.assert_called_once_with(
+            file_uri="gs://bucket/img.jpg", mime_type="image/jpeg"
+        )
+
+
+def test_make_image_part_reads_local_file(tmp_path):
+    from receipt_preprocessor.tools.gcs_utils import make_image_part
+
+    img_file = tmp_path / "receipt.jpg"
+    img_file.write_bytes(b"\xff\xd8\xff" + b"\x00" * 10)
+
+    with patch("receipt_preprocessor.tools.gcs_utils.genai_types.Part") as mock_part:
+        make_image_part(str(img_file))
+        mock_part.from_bytes.assert_called_once_with(
+            data=img_file.read_bytes(), mime_type="image/jpeg"
+        )
+
+
+# --- skip_if_rejected callback ---
+
+
+def test_skip_if_rejected_returns_none_when_no_rejection():
+    from receipt_preprocessor.sub_agents.callbacks import skip_if_rejected
+
+    ctx = MagicMock()
+    ctx.state = {}
+
+    result = skip_if_rejected(ctx)
+
+    assert result is None
+
+
+def test_skip_if_rejected_returns_content_when_rejection_code_set():
+    from google.genai import types
+
+    from receipt_preprocessor.sub_agents.callbacks import skip_if_rejected
+
+    ctx = MagicMock()
+    ctx.state = {"rejection_code": "NON_RECEIPT"}
+
+    result = skip_if_rejected(ctx)
+
+    assert result is not None
+    assert isinstance(result, types.Content)
+    assert result.role == "model"

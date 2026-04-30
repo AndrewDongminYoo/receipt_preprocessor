@@ -80,7 +80,7 @@
 
 ### ValidityGateAgent
 
-```
+```log
 Model: gemini-2.5-flash
 Tools:
   classify_receipt(image_uri)
@@ -98,7 +98,7 @@ Gate condition: type != DOMESTIC_RETAIL → reject
 
 ### QualityGateAgent
 
-```
+```log
 Model: gemini-2.5-flash
 Tools:
   score_image_quality(image_uri)
@@ -111,7 +111,7 @@ Gate condition: score < QUALITY_THRESHOLD (default: 6) → reject
 
 ### GeometryAgent
 
-```
+```log
 Model: gemini-2.5-flash
 Tools:
   detect_corners(image_uri)
@@ -127,7 +127,7 @@ Soft gate: corners == null → skip correction, pass original_image_uri through
 
 ### PackagingAgent
 
-```
+```log
 Model: gemini-2.5-flash
 Tools:
   build_azure_payload(corrected_image_uri, receipt_type, store_category, session_id)

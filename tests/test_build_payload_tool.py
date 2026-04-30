@@ -55,3 +55,39 @@ def test_build_payload_falls_back_to_original_when_no_corrected_uri():
 
     assert result["correctedImageUrl"] == "gs://bucket/original.jpg"
     assert result["preprocessMeta"]["corrected"] is False
+
+
+def test_build_payload_returns_reject_when_rejection_code_set():
+    from receipt_preprocessor.sub_agents.packaging.tools.build_payload_tool import (
+        build_azure_payload,
+    )
+
+    ctx = MagicMock()
+    ctx.state = {
+        "rejection_code": "NON_RECEIPT",
+        "rejection_message": "영수증이 아닌 이미지입니다.",
+    }
+
+    result = build_azure_payload(ctx)
+
+    assert result["status"] == "REJECT"
+    assert result["code"] == "NON_RECEIPT"
+    assert result["userMessage"] == "영수증이 아닌 이미지입니다."
+    assert ctx.state["azure_payload"] == result
+
+
+def test_build_payload_reject_quality_low():
+    from receipt_preprocessor.sub_agents.packaging.tools.build_payload_tool import (
+        build_azure_payload,
+    )
+
+    ctx = MagicMock()
+    ctx.state = {
+        "rejection_code": "QUALITY_LOW",
+        "rejection_message": "영수증 사진이 흐리거나 어두워 인식하기 어렵습니다.",
+    }
+
+    result = build_azure_payload(ctx)
+
+    assert result["status"] == "REJECT"
+    assert result["code"] == "QUALITY_LOW"

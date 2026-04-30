@@ -1,12 +1,11 @@
 import json
-import mimetypes
 import os
 
 import google.genai as genai
 from google.adk.tools.tool_context import ToolContext
-from google.genai import types as genai_types
 
 from receipt_preprocessor import config
+from receipt_preprocessor.tools.gcs_utils import make_image_part
 from receipt_preprocessor.tools.json_utils import extract_json
 
 _POLICY_PATH = os.path.join(os.path.dirname(__file__), "../../../policy.json")
@@ -36,13 +35,11 @@ def classify_receipt(tool_context: ToolContext) -> dict:
             "reason": "No image URI in session state",
         }
 
-    mime_type = mimetypes.guess_type(image_uri)[0] or "image/jpeg"
-
     client = genai.Client()
     response = client.models.generate_content(
         model=config.GENAI_MODEL,
         contents=[
-            genai_types.Part.from_uri(file_uri=image_uri, mime_type=mime_type),
+            make_image_part(image_uri),
             f"""Classify this image as a receipt for the 영끌 Korean retail reward app.
 
 Domestic retail keywords (DOMESTIC_RETAIL): {_POLICY['retail_keywords_ko']}

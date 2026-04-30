@@ -18,7 +18,7 @@
 
 ## File Map
 
-```
+```log
 receipt_preprocessor/
 ├── __init__.py
 ├── agent.py                                  Task 7
@@ -1323,7 +1323,7 @@ python -c "from receipt_preprocessor.agent import root_agent; print(root_agent.n
 
 Expected output:
 
-```
+```log
 receipt_preprocessor
 ```
 

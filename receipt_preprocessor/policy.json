@@ -1,0 +1,47 @@
+{
+  "allowed_store_categories": ["MART", "CONVENIENCE", "SUPERMARKET"],
+  "retail_keywords_ko": [
+    "이마트",
+    "홈플러스",
+    "롯데마트",
+    "코스트코",
+    "메가마트",
+    "킴스클럽",
+    "GS25",
+    "CU",
+    "세븐일레븐",
+    "미니스톱",
+    "이마트24",
+    "편의점",
+    "수퍼마켓",
+    "슈퍼마켓",
+    "마트",
+    "할인점"
+  ],
+  "overseas_indicators": [
+    "USD",
+    "EUR",
+    "JPY",
+    "CNY",
+    "GBP",
+    "AUD",
+    "CAD",
+    "SUBTOTAL",
+    "CHANGE DUE",
+    "AMOUNT DUE",
+    "RECEIPT NO",
+    "STORE NO",
+    "GST",
+    "TOTAL TAX"
+  ],
+  "non_receipt_indicators": [
+    "business card",
+    "menu",
+    "invoice",
+    "contract",
+    "license",
+    "passport",
+    "id card",
+    "certificate"
+  ]
+}

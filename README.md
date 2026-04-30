@@ -1,41 +1,47 @@
-# multiagent-handson
+# receipt_preprocessor
 
-A multi-agent AI system that iteratively generates lockscreen images from text, scores them against a compliance policy, and retries until the image meets the quality bar — built with **Google ADK**, **Imagen 3**, and **Gemini 2.5 Flash**.
+A **SequentialAgent** pipeline built with [Google ADK](https://google.github.io/adk-docs/) that
+pre-processes receipt images before they reach the Youngkeul Azure OCR backend.
 
 ## How it works
 
 ```plaintext
-Input text
-    │
-    ▼
-┌─────────────────────────────────────────────────────┐
-│  receipt_preprocessor  (LoopAgent)                         │
-│                                                     │
-│  ┌──────────────────────────────────────────────┐   │
-│  │  image_generation_scoring_agent (Sequential) │   │
-│  │                                              │   │
-│  │  1. image_generation_prompt_agent            │   │
-│  │     Reads policy.json → builds Imagen prompt │   │
-│  │                                              │   │
-│  │  2. image_generation_agent                   │   │
-│  │     Calls Imagen 3 → uploads PNG to GCS      │   │
-│  │                                              │   │
-│  │  3. scoring_images_prompt                    │   │
-│  │     Evaluates image against 11 criteria      │   │
-│  │     Sets total_score (0–50) in session state │   │
-│  └──────────────────────────────────────────────┘   │
-│                                                     │
-│  checker_agent                                      │
-│     score > SCORE_THRESHOLD → escalate (stop)       │
-│     OR loop_iteration >= MAX_ITERATIONS → stop      │
-│     else → loop again                               │
-└─────────────────────────────────────────────────────┘
-    │
-    ▼
-Final image + score
+receipt_preprocessor  (SequentialAgent)
+│
+├── before_agent_callback: set_session()
+│   └── injects session_id and UTC timestamp
+│
+├── ValidityGateAgent           [hard gate]
+│   └── classify_receipt()      → DOMESTIC_RETAIL / OVERSEAS / NON_RETAIL / NON_RECEIPT
+│       rejects unless DOMESTIC_RETAIL
+│
+├── QualityGateAgent            [hard gate]
+│   └── score_image_quality()   → score 0–10, issues list
+│       rejects when score < QUALITY_THRESHOLD (default 6)
+│
+├── GeometryAgent               [soft gate]
+│   ├── detect_corners()        → 4 corner pixel coordinates
+│   └── correct_and_upload()    → perspective-corrected JPEG in GCS
+│       on failure: passes original image through (GEOMETRY_FAILED, logged only)
+│
+└── PackagingAgent
+    └── build_azure_payload()   → PASS JSON with corrected URI + metadata
 ```
 
-Images are stored in GCS under the path `{date}/{unique_id}/{artifact_name}`.
+### End-to-end flow
+
+```plaintext
+[React Native app]
+      │  image selected from camera/gallery
+      ▼
+[Mobile Pre-flight]  file type · file size · refund regex · fingerprint dedup
+      │
+      ▼
+[receipt_preprocessor]  (this agent)
+      │
+      ▼
+[Azure OCR: v1/receipts/validate]
+```
 
 ## Prerequisites
 
@@ -44,17 +50,13 @@ Images are stored in GCS under the path `{date}/{unique_id}/{artifact_name}`.
 - Google Cloud project with these APIs enabled:
   - Vertex AI API
   - Cloud Storage API
-  - Imagen API (allowlist required for `imagen-3.0-generate-002`)
 - `gcloud` CLI authenticated: `gcloud auth application-default login`
 
 ## Setup
 
 ```bash
-# 1. Install dependencies
 uv sync
 source .venv/bin/activate
-
-# 2. Create and fill in environment variables
 cp receipt_preprocessor/.env.sample receipt_preprocessor/.env
 ```
 
@@ -64,17 +66,16 @@ Edit `receipt_preprocessor/.env`:
 GOOGLE_GENAI_USE_VERTEXAI=1
 GOOGLE_CLOUD_PROJECT=your-gcp-project-id
 GOOGLE_CLOUD_LOCATION=us-central1
-GOOGLE_CLOUD_STORAGE_BUCKET=your-gcp-project-id-imagescoring-bucket
-GCS_BUCKET_NAME=your-gcp-project-id-imagescoring-bucket
-SCORE_THRESHOLD=40
-IMAGEN_MODEL=imagen-3.0-generate-002
+GCS_BUCKET_NAME=your-gcp-project-id-receipt-preprocessor-bucket
+QUALITY_THRESHOLD=6
 GENAI_MODEL=gemini-2.5-flash
+GCS_IMAGE_TTL_DAYS=7
 ```
 
 Create the GCS bucket if it does not already exist:
 
 ```bash
-gcloud storage buckets create gs://$(gcloud config get-value project)-imagescoring-bucket \
+gcloud storage buckets create gs://$(gcloud config get-value project)-receipt-preprocessor-bucket \
   --location=us-central1
 ```
 
@@ -88,36 +89,67 @@ adk run receipt_preprocessor
 adk web
 ```
 
-Send a message like `"Generate a lockscreen image of a serene mountain at sunrise"` to start the pipeline.
+Send the GCS URI of a receipt image to start the pipeline:
 
-## Configuration reference
+```plaintext
+gs://your-bucket/receipts/img001.jpg
+```
 
-| Variable                | Default                   | Description                                   |
-| ----------------------- | ------------------------- | --------------------------------------------- |
-| `GOOGLE_CLOUD_PROJECT`  | —                         | GCP project used for Vertex AI and GCS        |
-| `GOOGLE_CLOUD_LOCATION` | `us-central1`             | Region for Vertex AI inference                |
-| `GCS_BUCKET_NAME`       | —                         | Bucket where generated PNGs are stored        |
-| `SCORE_THRESHOLD`       | `40`                      | Minimum score (out of 50) to accept the image |
-| `MAX_ITERATIONS`        | `1`                       | Hard cap on retry loop iterations             |
-| `IMAGEN_MODEL`          | `imagen-3.0-generate-002` | Image generation model                        |
-| `GENAI_MODEL`           | `gemini-2.5-flash`        | LLM used for all text-based agents            |
+## Agent output
 
-## Scoring criteria (`policy.json`)
+### PASS
 
-Each image is evaluated on 11 criteria, scored 0–5 each (max total: **50**):
+```json
+{
+  "status": "PASS",
+  "correctedImageUrl": "gs://bucket/20260430/session-id/corrected.jpg",
+  "storeCategory": "MART",
+  "preprocessMeta": {
+    "sessionId": "generated-session-id",
+    "qualityScore": 8,
+    "corrected": true
+  }
+}
+```
 
-| Criterion              | What is checked                                            |
-| ---------------------- | ---------------------------------------------------------- |
-| General Guidelines     | No restricted content (humans, politics, violence, etc.)   |
-| Global Defaults        | Baseline defaults for image/text/video resources           |
-| Media Type Definitions | Format, resolution, and encoding conformance               |
-| Image Specifications   | High-resolution, photorealistic, distortion-free           |
-| Text Specifications    | Concise copy, no clickbait, proper encoding                |
-| Clock Visibility       | Adequate spacing and contrast around the clock area        |
-| Notification Area      | Top portion clear with high contrast for notifications     |
-| Safe Zones             | No important content in top 25%, bottom 15%, left/right 5% |
-| Composition Styles     | Visually appealing layout per defined style definitions    |
-| Color Scheme           | Sufficient contrast and harmonious color relationships     |
+### REJECT
+
+```json
+{
+  "status": "REJECT",
+  "code": "QUALITY_LOW",
+  "userMessage": "영수증 사진이 흐리거나 어두워 인식하기 어렵습니다. 다시 촬영해 주세요."
+}
+```
+
+## Rejection codes
+
+| Code               | Layer | Meaning                                                          |
+| ------------------ | ----- | ---------------------------------------------------------------- |
+| `NON_RECEIPT`      | Cloud | Image is not a receipt                                           |
+| `OVERSEAS_RECEIPT` | Cloud | Receipt is not domestic                                          |
+| `NON_RETAIL`       | Cloud | Receipt is not from supported retail                             |
+| `QUALITY_LOW`      | Cloud | Image quality is below threshold                                 |
+| `GEOMETRY_FAILED`  | Cloud | Perspective correction failed (soft — logged only, not returned) |
+
+## Configuration reference (`receipt_preprocessor/.env`)
+
+| Variable                | Default            | Required | Purpose                                       |
+| ----------------------- | ------------------ | :------: | --------------------------------------------- |
+| `GOOGLE_CLOUD_PROJECT`  | —                  |    ✓     | GCP project for Vertex AI and GCS             |
+| `GOOGLE_CLOUD_LOCATION` | `us-central1`      |          | Vertex AI region                              |
+| `GCS_BUCKET_NAME`       | —                  |    ✓     | Temporary bucket for corrected receipt images |
+| `QUALITY_THRESHOLD`     | `6`                |          | Minimum acceptable quality score (0–10)       |
+| `GENAI_MODEL`           | `gemini-2.5-flash` |          | Gemini model used by all vision tools         |
+| `GCS_IMAGE_TTL_DAYS`    | `7`                |          | Retention period for temporary GCS images     |
+
+## Tests
+
+```bash
+pytest
+```
+
+22 unit tests cover all tools, config validation, and the geometry soft-gate fallback.
 
 ## Deploying to Vertex AI Agent Engine
 
@@ -129,26 +161,24 @@ uv build
 python deploy/deploy.py
 ```
 
-The script prints the Vertex AI resource name on success. Save this for A2A wiring.
+The script prints the Vertex AI resource name on success.
 
 ## A2A server (Agent-to-Agent protocol)
 
-The `receipt_preprocessor_adk_a2a_server/` directory wraps the agent as an A2A-compatible HTTP service.
-Another agent can call it remotely using the card at `http://localhost:8001/a2a/receipt_preprocessor/.well-known/agent.json`.
-
 ```bash
 # Start the A2A server
-adk api_server receipt_preprocessor_adk_a2a_server --port 8001
+adk api_server receipt_preprocessor_a2a_server --port 8001
 
 # Run the test client against the live server
 python test_client/remote_test.py
 ```
 
-Supported I/O: input `text/plain` → output `image/png` + `text/plain` (streaming enabled).
+Agent card: `http://localhost:8001/a2a/receipt_preprocessor/.well-known/agent.json`
+
+Supported I/O: `image/jpeg`, `image/png`, `image/heic` → `application/json` (non-streaming).
 
 ## Resources
 
-- [Codelab: Create multi-agents with ADK and A2A](https://codelabs.developers.google.com/codelabs/create-multi-agents-adk-a2a?hl=ja#1)
-- [Codelab: InstaVibe ADK multi-agents](https://codelabs.developers.google.com/instavibe-adk-multi-agents/instructions#0)
+- [Codelab: Create multi-agents with ADK and A2A](https://codelabs.developers.google.com/codelabs/create-multi-agents-adk-a2a?hl=ko#7)
 - [Google ADK documentation](https://google.github.io/adk-docs/)
 - [A2A Protocol specification](https://a2a-protocol.org/latest/)

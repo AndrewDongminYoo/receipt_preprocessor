@@ -2,7 +2,7 @@
 name = "receipt-preprocessor"
 version = "0.1.0"
 description = "Pre-processes receipt images before Azure OCR: validates retail category, scores quality, corrects perspective."
-license = "Apache License 2.0"
+license = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.10"
 
@@ -23,6 +23,7 @@ pydantic = "^2.10.6"
 python-dotenv = "^1.0.1"
 opencv-python-headless = "^4.9.0"
 numpy = "^1.26.0"
+pillow = "^10.3.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"

@@ -22,7 +22,7 @@ def _compute_perspective_coeffs(src_corners: list, dst_corners: list) -> list:
     We solve the resulting 8x8 linear system via least-squares.
     """
     A, b = [], []
-    for (x, y), (X, Y) in zip(dst_corners, src_corners):
+    for (x, y), (X, Y) in zip(dst_corners, src_corners, strict=False):
         A.append([x, y, 1, 0, 0, 0, -x * X, -y * X])
         A.append([0, 0, 0, x, y, 1, -x * Y, -y * Y])
         b.extend([X, Y])

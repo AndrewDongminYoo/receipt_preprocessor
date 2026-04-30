@@ -84,6 +84,7 @@ pyproject.toml                                Task 1
 ## Task 1: Project Scaffold
 
 **Files:**
+
 - Create: `pyproject.toml`
 - Create: `receipt_preprocessor/config.py`
 - Create: `receipt_preprocessor/policy.json`
@@ -151,18 +152,48 @@ GCS_IMAGE_TTL_DAYS: int = int(os.getenv("GCS_IMAGE_TTL_DAYS", "7"))
 {
   "allowed_store_categories": ["MART", "CONVENIENCE", "SUPERMARKET"],
   "retail_keywords_ko": [
-    "이마트", "홈플러스", "롯데마트", "코스트코", "메가마트", "킴스클럽",
-    "GS25", "CU", "세븐일레븐", "미니스톱", "이마트24",
-    "편의점", "수퍼마켓", "슈퍼마켓", "마트", "할인점"
+    "이마트",
+    "홈플러스",
+    "롯데마트",
+    "코스트코",
+    "메가마트",
+    "킴스클럽",
+    "GS25",
+    "CU",
+    "세븐일레븐",
+    "미니스톱",
+    "이마트24",
+    "편의점",
+    "수퍼마켓",
+    "슈퍼마켓",
+    "마트",
+    "할인점"
   ],
   "overseas_indicators": [
-    "USD", "EUR", "JPY", "CNY", "GBP", "AUD", "CAD",
-    "SUBTOTAL", "CHANGE DUE", "AMOUNT DUE", "RECEIPT NO",
-    "STORE NO", "GST", "TOTAL TAX"
+    "USD",
+    "EUR",
+    "JPY",
+    "CNY",
+    "GBP",
+    "AUD",
+    "CAD",
+    "SUBTOTAL",
+    "CHANGE DUE",
+    "AMOUNT DUE",
+    "RECEIPT NO",
+    "STORE NO",
+    "GST",
+    "TOTAL TAX"
   ],
   "non_receipt_indicators": [
-    "business card", "menu", "invoice", "contract",
-    "license", "passport", "id card", "certificate"
+    "business card",
+    "menu",
+    "invoice",
+    "contract",
+    "license",
+    "passport",
+    "id card",
+    "certificate"
   ]
 }
 ```
@@ -201,6 +232,7 @@ touch tests/__init__.py
 - [ ] **Step 6: Write the failing test**
 
 `tests/test_config.py`:
+
 ```python
 import os
 
@@ -234,6 +266,7 @@ git commit -m "feat: scaffold receipt-preprocessor project"
 ## Task 2: Shared Infrastructure (GCS Utils + Reject Tool)
 
 **Files:**
+
 - Create: `receipt_preprocessor/tools/gcs_utils.py`
 - Create: `receipt_preprocessor/tools/reject_tool.py`
 - Test: `tests/test_shared_tools.py`
@@ -241,6 +274,7 @@ git commit -m "feat: scaffold receipt-preprocessor project"
 - [ ] **Step 1: Write the failing tests**
 
 `tests/test_shared_tools.py`:
+
 ```python
 from unittest.mock import patch, MagicMock
 
@@ -362,6 +396,7 @@ git commit -m "feat: add shared GCS utils and reject tool"
 ## Task 3: ValidityGateAgent
 
 **Files:**
+
 - Create: `receipt_preprocessor/sub_agents/validity/tools/classify_receipt_tool.py`
 - Create: `receipt_preprocessor/sub_agents/validity/prompt.py`
 - Create: `receipt_preprocessor/sub_agents/validity/validity_agent.py`
@@ -370,7 +405,8 @@ git commit -m "feat: add shared GCS utils and reject tool"
 - [ ] **Step 1: Write the failing tests**
 
 `tests/test_classify_receipt_tool.py`:
-```python
+
+````python
 from unittest.mock import patch, MagicMock
 
 
@@ -436,7 +472,7 @@ def test_classify_handles_markdown_wrapped_json():
         result = classify_receipt(ctx)
 
     assert result["type"] == "OVERSEAS"
-```
+````
 
 - [ ] **Step 2: Run tests to confirm they fail**
 
@@ -448,7 +484,7 @@ Expected: `ImportError`
 
 - [ ] **Step 3: Create `receipt_preprocessor/sub_agents/validity/tools/classify_receipt_tool.py`**
 
-```python
+````python
 import json
 import os
 import re
@@ -514,7 +550,7 @@ Respond ONLY with valid JSON, no markdown:
     tool_context.state["receipt_type"] = result["type"]
     tool_context.state["store_category"] = result["store_category"]
     return result
-```
+````
 
 - [ ] **Step 4: Create `receipt_preprocessor/sub_agents/validity/prompt.py`**
 
@@ -572,6 +608,7 @@ git commit -m "feat: add ValidityGateAgent with classify_receipt tool"
 ## Task 4: QualityGateAgent
 
 **Files:**
+
 - Create: `receipt_preprocessor/sub_agents/quality/tools/score_quality_tool.py`
 - Create: `receipt_preprocessor/sub_agents/quality/prompt.py`
 - Create: `receipt_preprocessor/sub_agents/quality/quality_agent.py`
@@ -580,6 +617,7 @@ git commit -m "feat: add ValidityGateAgent with classify_receipt tool"
 - [ ] **Step 1: Write the failing tests**
 
 `tests/test_score_quality_tool.py`:
+
 ```python
 from unittest.mock import patch, MagicMock
 
@@ -654,7 +692,7 @@ Expected: `ImportError`
 
 - [ ] **Step 3: Create `receipt_preprocessor/sub_agents/quality/tools/score_quality_tool.py`**
 
-```python
+````python
 import json
 import re
 
@@ -705,7 +743,7 @@ Respond ONLY with valid JSON, no markdown:
     tool_context.state["quality_score"] = result["score"]
     tool_context.state["quality_issues"] = result.get("issues", [])
     return result
-```
+````
 
 - [ ] **Step 4: Create `receipt_preprocessor/sub_agents/quality/prompt.py`**
 
@@ -769,6 +807,7 @@ git commit -m "feat: add QualityGateAgent with score_image_quality tool"
 ## Task 5: GeometryAgent
 
 **Files:**
+
 - Create: `receipt_preprocessor/sub_agents/geometry/tools/detect_corners_tool.py`
 - Create: `receipt_preprocessor/sub_agents/geometry/tools/correct_perspective_tool.py`
 - Create: `receipt_preprocessor/sub_agents/geometry/prompt.py`
@@ -778,6 +817,7 @@ git commit -m "feat: add QualityGateAgent with score_image_quality tool"
 - [ ] **Step 1: Write the failing tests**
 
 `tests/test_geometry_tools.py`:
+
 ```python
 import io
 from unittest.mock import patch, MagicMock
@@ -911,7 +951,7 @@ Expected: `ImportError`
 
 - [ ] **Step 3: Create `receipt_preprocessor/sub_agents/geometry/tools/detect_corners_tool.py`**
 
-```python
+````python
 import json
 import re
 
@@ -956,7 +996,7 @@ If the receipt fills the entire frame OR corners cannot be reliably determined, 
     )
 
     return _extract_json(response.text)
-```
+````
 
 - [ ] **Step 4: Create `receipt_preprocessor/sub_agents/geometry/tools/correct_perspective_tool.py`**
 
@@ -1071,6 +1111,7 @@ git commit -m "feat: add GeometryAgent with perspective correction tools"
 ## Task 6: PackagingAgent
 
 **Files:**
+
 - Create: `receipt_preprocessor/sub_agents/packaging/tools/build_payload_tool.py`
 - Create: `receipt_preprocessor/sub_agents/packaging/prompt.py`
 - Create: `receipt_preprocessor/sub_agents/packaging/packaging_agent.py`
@@ -1079,6 +1120,7 @@ git commit -m "feat: add GeometryAgent with perspective correction tools"
 - [ ] **Step 1: Write the failing tests**
 
 `tests/test_build_payload_tool.py`:
+
 ```python
 from unittest.mock import MagicMock
 
@@ -1229,6 +1271,7 @@ git commit -m "feat: add PackagingAgent with build_azure_payload tool"
 ## Task 7: Root Agent
 
 **Files:**
+
 - Create: `receipt_preprocessor/agent.py`
 - Modify: `receipt_preprocessor/sub_agents/__init__.py` (add exports)
 
@@ -1279,6 +1322,7 @@ python -c "from receipt_preprocessor.agent import root_agent; print(root_agent.n
 ```
 
 Expected output:
+
 ```
 receipt_preprocessor
 ```
@@ -1306,6 +1350,7 @@ git commit -m "feat: wire root SequentialAgent with all four sub-agents"
 ## Task 8: A2A Server, Deploy Script, and Test Client
 
 **Files:**
+
 - Create: `receipt_preprocessor_a2a_server/a2a_agent.py`
 - Create: `receipt_preprocessor_a2a_server/remote_a2a/receipt_preprocessor/agent.json`
 - Create: `deploy/deploy.py`
@@ -1448,6 +1493,7 @@ adk api_server receipt_preprocessor_a2a_server --port 8001
 ```
 
 In a second terminal:
+
 ```bash
 curl http://localhost:8001/a2a/receipt_preprocessor/.well-known/agent.json
 ```

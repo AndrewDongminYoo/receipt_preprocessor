@@ -203,57 +203,56 @@ The agent should return one of the following JSON-compatible results.
 
 ### ValidityGateAgent
 
-* Classify the image into exactly one receipt type:
+- Classify the image into exactly one receipt type:
+  - `DOMESTIC_RETAIL`
+  - `OVERSEAS`
+  - `NON_RETAIL`
+  - `NON_RECEIPT`
 
-  * `DOMESTIC_RETAIL`
-  * `OVERSEAS`
-  * `NON_RETAIL`
-  * `NON_RECEIPT`
-* Only `DOMESTIC_RETAIL` may continue.
-* Map non-passing classifications to rejection codes:
+- Only `DOMESTIC_RETAIL` may continue.
+- Map non-passing classifications to rejection codes:
+  - `OVERSEAS` → `OVERSEAS_RECEIPT`
+  - `NON_RETAIL` → `NON_RETAIL`
+  - `NON_RECEIPT` → `NON_RECEIPT`
 
-  * `OVERSEAS` → `OVERSEAS_RECEIPT`
-  * `NON_RETAIL` → `NON_RETAIL`
-  * `NON_RECEIPT` → `NON_RECEIPT`
-* Store `receipt_type` and `store_category` in session state.
+- Store `receipt_type` and `store_category` in session state.
 
 ### QualityGateAgent
 
-* Score image quality from `0` to `10`.
-* Detect quality issues from:
+- Score image quality from `0` to `10`.
+- Detect quality issues from:
+  - `blur`
+  - `overexposed`
+  - `underexposed`
+  - `occluded`
+  - `low_res`
 
-  * `blur`
-  * `overexposed`
-  * `underexposed`
-  * `occluded`
-  * `low_res`
-* Reject with `QUALITY_LOW` when `quality_score < QUALITY_THRESHOLD`.
-* Store `quality_score` and `quality_issues` in session state.
+- Reject with `QUALITY_LOW` when `quality_score < QUALITY_THRESHOLD`.
+- Store `quality_score` and `quality_issues` in session state.
 
 ### GeometryAgent
 
-* Detect receipt corners in this order:
+- Detect receipt corners in this order:
+  - top-left
+  - top-right
+  - bottom-right
+  - bottom-left
 
-  * top-left
-  * top-right
-  * bottom-right
-  * bottom-left
-* If corners are detected, apply perspective correction and upload the corrected image to GCS.
-* If corners are not detected, do not reject. Set `corrected_image_uri` to `original_image_uri` or let PackagingAgent fall back to the original.
-* Log geometry failure as `GEOMETRY_FAILED`, but treat it as a soft failure.
+- If corners are detected, apply perspective correction and upload the corrected image to GCS.
+- If corners are not detected, do not reject. Set `corrected_image_uri` to `original_image_uri` or let PackagingAgent fall back to the original.
+- Log geometry failure as `GEOMETRY_FAILED`, but treat it as a soft failure.
 
 ### PackagingAgent
 
-* Build the final Azure-compatible payload.
-* Use `corrected_image_uri` when present.
-* Fall back to `original_image_uri` when perspective correction was skipped.
-* Include:
-
-  * image URL
-  * store category
-  * session ID
-  * quality score
-  * whether correction was applied
+- Build the final Azure-compatible payload.
+- Use `corrected_image_uri` when present.
+- Fall back to `original_image_uri` when perspective correction was skipped.
+- Include:
+  - image URL
+  - store category
+  - session ID
+  - quality score
+  - whether correction was applied
 
 ## A2A Exposure
 
@@ -284,24 +283,23 @@ Use the smallest test level that can verify the behavior.
 
 ### Required Fixture Categories
 
-* valid domestic mart receipt
-* skewed receipt
-* blurry receipt
-* overseas receipt
-* non-receipt image such as business card or menu
-* refund receipt
+- valid domestic mart receipt
+- skewed receipt
+- blurry receipt
+- overseas receipt
+- non-receipt image such as business card or menu
+- refund receipt
 
 ## Development Guidelines
 
-* Keep Azure OCR integration unchanged.
-* Do not move mobile pre-flight rules into the cloud agent unless explicitly requested.
-* Do not reject when only geometry correction fails.
-* Prefer deterministic tool code over prompt-only behavior where possible.
-* Keep prompts narrow and schema-oriented.
-* Keep rejection responses stable because the React Native app depends on the code values.
-* Add tests around every rejection code before changing gate behavior.
-* Avoid over-engineering the first version. Ship the baseline pipeline first:
-
+- Keep Azure OCR integration unchanged.
+- Do not move mobile pre-flight rules into the cloud agent unless explicitly requested.
+- Do not reject when only geometry correction fails.
+- Prefer deterministic tool code over prompt-only behavior where possible.
+- Keep prompts narrow and schema-oriented.
+- Keep rejection responses stable because the React Native app depends on the code values.
+- Add tests around every rejection code before changing gate behavior.
+- Avoid over-engineering the first version. Ship the baseline pipeline first:
   1. validity gate
   2. quality gate
   3. geometry soft correction

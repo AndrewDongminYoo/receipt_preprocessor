@@ -58,7 +58,7 @@ The system is a **SequentialAgent** that validates and prepares receipt images b
 receipt_preprocessor (SequentialAgent)
 │
 ├── before_agent_callback: set_session()
-│   └── injects session_id into state
+│   └── resets pipeline state and injects session_id + timestamp
 │
 ├── ValidityGateAgent
 │   ├── classify_receipt(image_uri)
@@ -119,17 +119,20 @@ receipt_preprocessor (SequentialAgent)
 
 ## Session State Keys
 
-| Key                   | Set by                 | Consumed by                              |
-| --------------------- | ---------------------- | ---------------------------------------- |
-| `session_id`          | `set_session` callback | GCS path, PackagingAgent                 |
-| `original_image_uri`  | input                  | ValidityGate, QualityGate, GeometryAgent |
-| `receipt_type`        | ValidityGateAgent      | PackagingAgent                           |
-| `store_category`      | ValidityGateAgent      | PackagingAgent                           |
-| `quality_score`       | QualityGateAgent       | logging, PackagingAgent                  |
-| `quality_issues`      | QualityGateAgent       | logging                                  |
-| `corrected_image_uri` | GeometryAgent          | PackagingAgent                           |
-| `rejection_code`      | `reject_with_code()`   | app response                             |
-| `azure_payload`       | PackagingAgent         | app / Azure upload chain                 |
+| Key                   | Set by                 | Consumed by                      |
+| --------------------- | ---------------------- | -------------------------------- |
+| `session_id`          | `set_session` callback | GCS path, PackagingAgent         |
+| `timestamp`           | `set_session` callback | logging                          |
+| `original_image_uri`  | ValidityGateAgent      | QualityGate, GeometryAgent       |
+| `receipt_type`        | ValidityGateAgent      | PackagingAgent                   |
+| `store_category`      | ValidityGateAgent      | PackagingAgent                   |
+| `quality_score`       | QualityGateAgent       | logging, PackagingAgent          |
+| `quality_issues`      | QualityGateAgent       | logging                          |
+| `corrected_image_uri` | GeometryAgent          | PackagingAgent                   |
+| `geometry_corrected`  | GeometryAgent          | PackagingAgent                   |
+| `rejection_code`      | `reject_with_code()`   | `skip_if_rejected`, app response |
+| `rejection_message`   | `reject_with_code()`   | app response                     |
+| `azure_payload`       | PackagingAgent         | app / Azure upload chain         |
 
 ## Configuration (`receipt_preprocessor/.env`)
 

@@ -30,25 +30,33 @@ def test_reject_with_code_sets_state_and_escalates():
 def test_download_from_gcs():
     from receipt_preprocessor.tools.gcs_utils import download_from_gcs
 
-    with patch("receipt_preprocessor.tools.gcs_utils.storage.Client") as mock_cls:
-        mock_blob = MagicMock()
-        mock_blob.download_as_bytes.return_value = b"image_data"
-        mock_cls.return_value.bucket.return_value.blob.return_value = mock_blob
+    mock_client = MagicMock()
+    mock_blob = MagicMock()
+    mock_blob.download_as_bytes.return_value = b"image_data"
+    mock_client.bucket.return_value.blob.return_value = mock_blob
 
+    with patch(
+        "receipt_preprocessor.tools.gcs_utils._get_storage_client",
+        return_value=mock_client,
+    ):
         result = download_from_gcs("gs://my-bucket/path/to/img.jpg")
 
     assert result == b"image_data"
-    mock_cls.return_value.bucket.assert_called_with("my-bucket")
-    mock_cls.return_value.bucket.return_value.blob.assert_called_with("path/to/img.jpg")
+    mock_client.bucket.assert_called_with("my-bucket")
+    mock_client.bucket.return_value.blob.assert_called_with("path/to/img.jpg")
 
 
 def test_upload_to_gcs():
     from receipt_preprocessor.tools.gcs_utils import upload_to_gcs
 
-    with patch("receipt_preprocessor.tools.gcs_utils.storage.Client") as mock_cls:
-        mock_blob = MagicMock()
-        mock_cls.return_value.bucket.return_value.blob.return_value = mock_blob
+    mock_client = MagicMock()
+    mock_blob = MagicMock()
+    mock_client.bucket.return_value.blob.return_value = mock_blob
 
+    with patch(
+        "receipt_preprocessor.tools.gcs_utils._get_storage_client",
+        return_value=mock_client,
+    ):
         result = upload_to_gcs(b"image_data", "my-bucket", "20260430/abc/corrected.jpg")
 
     assert result == "gs://my-bucket/20260430/abc/corrected.jpg"
@@ -64,16 +72,20 @@ def test_download_invalid_uri_raises():
         download_from_gcs("my-bucket/path/img.jpg")
 
 
-def test_download_gcs_api_error_raises_runtime():
+def test_download_gcs_api_error_raises():
     from google.api_core.exceptions import GoogleAPICallError
 
     from receipt_preprocessor.tools.gcs_utils import download_from_gcs
 
-    with patch("receipt_preprocessor.tools.gcs_utils.storage.Client") as mock_cls:
-        mock_cls.return_value.bucket.return_value.blob.return_value.download_as_bytes.side_effect = GoogleAPICallError(
-            "404 Not Found"
-        )
-        with pytest.raises(RuntimeError, match="GCS download failed"):
+    mock_client = MagicMock()
+    mock_client.bucket.return_value.blob.return_value.download_as_bytes.side_effect = (
+        GoogleAPICallError("404 Not Found")
+    )
+    with patch(
+        "receipt_preprocessor.tools.gcs_utils._get_storage_client",
+        return_value=mock_client,
+    ):
+        with pytest.raises(GoogleAPICallError):
             download_from_gcs("gs://my-bucket/missing.jpg")
 
 

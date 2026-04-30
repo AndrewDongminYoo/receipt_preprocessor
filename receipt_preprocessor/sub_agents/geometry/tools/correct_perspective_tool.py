@@ -1,10 +1,11 @@
+import io
 import logging
 from datetime import date
 from typing import Optional
 
-import cv2
 import numpy as np
 from google.adk.tools.tool_context import ToolContext
+from PIL import Image
 
 from receipt_preprocessor import config
 from receipt_preprocessor.tools.gcs_utils import download_from_gcs, upload_to_gcs
@@ -12,24 +13,37 @@ from receipt_preprocessor.tools.gcs_utils import download_from_gcs, upload_to_gc
 logger = logging.getLogger(__name__)
 
 
+def _compute_perspective_coeffs(src_corners: list, dst_corners: list) -> list:
+    """Compute 8 Pillow PERSPECTIVE coefficients for the inverse transform (dst→src).
+
+    Pillow's transform maps destination coords to source coords:
+        x_src = (a·x + b·y + c) / (g·x + h·y + 1)
+        y_src = (d·x + e·y + f) / (g·x + h·y + 1)
+    We solve the resulting 8x8 linear system via least-squares.
+    """
+    A, b = [], []
+    for (x, y), (X, Y) in zip(dst_corners, src_corners):
+        A.append([x, y, 1, 0, 0, 0, -x * X, -y * X])
+        A.append([0, 0, 0, x, y, 1, -x * Y, -y * Y])
+        b.extend([X, Y])
+    coeffs, _, _, _ = np.linalg.lstsq(
+        np.array(A, dtype=np.float64), np.array(b, dtype=np.float64), rcond=None
+    )
+    return coeffs.tolist()
+
+
 def _apply_perspective(image_bytes: bytes, corners: list) -> bytes:
-    """Applies a 4-point perspective transform (TL, TR, BR, BL) using OpenCV."""
-    nparr = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    if img is None:
-        raise ValueError("Could not decode image bytes")
-
-    h, w = img.shape[:2]
-    src = np.float32(corners)
-    dst = np.float32([[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]])
-
-    M = cv2.getPerspectiveTransform(src, dst)
-    corrected = cv2.warpPerspective(img, M, (w, h))
-
-    success, buffer = cv2.imencode(".jpg", corrected, [cv2.IMWRITE_JPEG_QUALITY, 95])
-    if not success:
-        raise ValueError("Could not encode corrected image")
-    return buffer.tobytes()
+    """Applies a 4-point perspective transform (TL, TR, BR, BL) using Pillow."""
+    img = Image.open(io.BytesIO(image_bytes))
+    w, h = img.size
+    dst = [[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]]
+    coeffs = _compute_perspective_coeffs(corners, dst)
+    corrected = img.transform(
+        (w, h), Image.Transform.PERSPECTIVE, coeffs, Image.Resampling.BICUBIC
+    )
+    output = io.BytesIO()
+    corrected.save(output, format="JPEG", quality=95)
+    return output.getvalue()
 
 
 def correct_and_upload(corners: Optional[list], tool_context: ToolContext) -> dict:

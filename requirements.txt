@@ -352,7 +352,6 @@ nltk==3.9.4
     # via rouge-score
 numpy==1.26.4
     # via
-    #   opencv-python-headless
     #   pandas
     #   receipt-preprocessor
     #   rouge-score
@@ -360,8 +359,6 @@ numpy==1.26.4
     #   scipy
 openai==2.24.0
     # via litellm
-opencv-python-headless==4.11.0.86
-    # via receipt-preprocessor
 opentelemetry-api==1.38.0
     # via
     #   a2a-sdk

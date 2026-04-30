@@ -1,45 +1,39 @@
 [project]
-name = "image-scoring"
+name = "receipt-preprocessor"
 version = "0.1.0"
-description = "The image scoring generates an image for a news article, evaluates the image agaionst a set of rules and regenerates the image if necessary ."
+description = "Pre-processes receipt images before Azure OCR: validates retail category, scores quality, corrects perspective."
 license = "Apache License 2.0"
 readme = "README.md"
-packages = [{ include = "receipt_preprocessor" }]
 requires-python = ">=3.10"
 
 [tool.poetry]
+packages = [{ include = "receipt_preprocessor" }]
 include = ["receipt_preprocessor/.env"]
 
 [tool.poetry.dependencies]
 python = ">=3.10"
-pandas = "^2.1.1"
 google-adk = { version = "==1.19.0", extras = ["eval"] }
 a2a-sdk = "^0.2.16"
 google-cloud-aiplatform = { extras = [
   "adk",
   "agent-engines",
 ], version = "^1.128.0" }
+google-cloud-storage = "^3.0.0"
 google-genai = "^1.52.0"
 pydantic = "^2.10.6"
 python-dotenv = "^1.0.1"
-pillow = "^10.3.0"
-
-[tool.poetry.group.dev]
-optional = true
+opencv-python-headless = "^4.9.0"
+numpy = "^1.26.0"
 
 [tool.poetry.group.dev.dependencies]
-google-adk = { version = "==1.19.0", extras = ["eval"] }
 pytest = "^8.3.5"
 pytest-asyncio = "^0.26.0"
-poetry = "^2.0.0"
-poetry-plugin-export = "^1.6.0"
-
-[tool.poetry.group.deployment]
-optional = true
 
 [tool.poetry.group.deployment.dependencies]
 absl-py = "^2.2.1"
-pandas = "^2.1.1"
+
+[dependency-groups]
+dev = ["pytest>=8.3.5", "pytest-asyncio>=0.26.0"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

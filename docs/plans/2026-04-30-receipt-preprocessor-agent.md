@@ -68,7 +68,7 @@ receipt_preprocessor_a2a_server/
     └── agent.json                            Task 8
 
 deploy/deploy.py                              Task 8
-testclient/remote_test.py                     Task 8
+test_client/remote_test.py                     Task 8
 tests/
 ├── __init__.py                               Task 1
 ├── test_shared_tools.py                      Task 2
@@ -1309,7 +1309,7 @@ git commit -m "feat: wire root SequentialAgent with all four sub-agents"
 - Create: `receipt_preprocessor_a2a_server/a2a_agent.py`
 - Create: `receipt_preprocessor_a2a_server/remote_a2a/receipt_preprocessor/agent.json`
 - Create: `deploy/deploy.py`
-- Create: `testclient/remote_test.py`
+- Create: `test_client/remote_test.py`
 
 - [ ] **Step 1: Create `receipt_preprocessor_a2a_server/remote_a2a/receipt_preprocessor/agent.json`**
 
@@ -1395,7 +1395,7 @@ except AttributeError:
     print(f"Deployed. Check attributes: {dir(remote_app)}")
 ```
 
-- [ ] **Step 4: Create `testclient/remote_test.py`**
+- [ ] **Step 4: Create `test_client/remote_test.py`**
 
 ```python
 """
@@ -1403,7 +1403,7 @@ Remote test client for the deployed receipt_preprocessor A2A agent.
 
 Usage:
   export AGENT_RESOURCE_NAME="projects/.../locations/.../reasoningEngines/..."
-  python testclient/remote_test.py
+  python test_client/remote_test.py
 """
 import os
 
@@ -1466,7 +1466,7 @@ Expected: prints the Vertex AI resource name. Save it as `AGENT_RESOURCE_NAME`.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add receipt_preprocessor_a2a_server/ deploy/ testclient/
+git add receipt_preprocessor_a2a_server/ deploy/ test_client/
 git commit -m "feat: add A2A server, deploy script, and remote test client"
 ```
 
@@ -1483,4 +1483,4 @@ After all tasks are complete:
 - [ ] `adk run receipt_preprocessor` with a non-receipt image → `rejection_code == "NON_RECEIPT"`
 - [ ] `adk run receipt_preprocessor` with a tilted receipt → `geometry_corrected == True` in session state
 - [ ] A2A server responds to `curl /.well-known/agent.json`
-- [ ] Deployed agent on Vertex AI responds via `testclient/remote_test.py`
+- [ ] Deployed agent on Vertex AI responds via `test_client/remote_test.py`

@@ -217,7 +217,7 @@ receipt-preprocessor/
 
 ## Exposure (A2A Protocol)
 
-기존 `image_scoring_adk_a2a_server` 패턴을 재사용한다.
+ADK의 `adk api_server` 명령으로 A2A 프로토콜 엔드포인트를 노출한다.
 
 ```json
 {

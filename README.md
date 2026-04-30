@@ -95,6 +95,76 @@ Send the GCS URI of a receipt image to start the pipeline:
 gs://your-bucket/receipts/img001.jpg
 ```
 
+## Running in Cloud Shell Editor
+
+[Cloud Shell Editor](https://ide.cloud.google.com/) is the quickest way to run this project without
+any local setup. ADC (Application Default Credentials) is pre-configured for your GCP account, so
+`GOOGLE_GENAI_USE_VERTEXAI=1` is all that is needed — no API key management required.
+
+### 1. Open Cloud Shell Editor
+
+Go to `https://ide.cloud.google.com/` and open a terminal via **Terminal > New Terminal**.
+
+### 2. Configure your project
+
+```bash
+gcloud auth list                        # verify the active account
+gcloud config set project <YOUR_PROJECT_ID>
+
+# Enable required APIs
+gcloud services enable aiplatform.googleapis.com
+gcloud services enable cloudresourcemanager.googleapis.com
+```
+
+### 3. Install dependencies
+
+```bash
+pip install uv
+uv sync
+source .venv/bin/activate
+```
+
+### 4. Create `.env`
+
+In Cloud Shell, `$(gcloud ...)` expressions are evaluated by bash, so you can use this shortcut:
+
+```bash
+PROJECT_ID=$(gcloud config get-value project)
+
+cat > receipt_preprocessor/.env <<EOF
+GOOGLE_GENAI_USE_VERTEXAI=1
+GOOGLE_CLOUD_PROJECT=${PROJECT_ID}
+GOOGLE_CLOUD_LOCATION=us-central1
+GCS_BUCKET_NAME=${PROJECT_ID}-receipt-preprocessor-bucket
+QUALITY_THRESHOLD=6
+GENAI_MODEL=gemini-2.5-flash
+GCS_IMAGE_TTL_DAYS=7
+EOF
+```
+
+### 5. Create the GCS bucket and grant access
+
+```bash
+gcloud storage buckets create gs://${PROJECT_ID}-receipt-preprocessor-bucket \
+  --location=us-central1
+
+# Grant the Vertex AI service account write access to the bucket
+PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
+SA_EMAIL="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+gcloud beta services identity create \
+  --service=aiplatform.googleapis.com --project=${PROJECT_NUMBER}
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/storage.objectUser" \
+  --condition=None
+```
+
+### 6. Run
+
+```bash
+adk web    # Cloud Shell automatically proxies the port — click the URL it prints
+```
+
 ## Agent output
 
 ### PASS

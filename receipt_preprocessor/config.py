@@ -17,10 +17,10 @@ def _int_env(key: str, default: int) -> int:
     raw = os.getenv(key, str(default))
     try:
         return int(raw)
-    except ValueError:
+    except ValueError as exc:
         raise EnvironmentError(
             f"Environment variable '{key}' must be an integer, got: {raw!r}"
-        )
+        ) from exc
 
 
 GCS_BUCKET_NAME: str = _require("GCS_BUCKET_NAME")

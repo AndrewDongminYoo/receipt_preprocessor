@@ -11,7 +11,7 @@ packages = [{ include = "receipt_preprocessor" }]
 
 [tool.poetry.dependencies]
 python = ">=3.10"
-google-adk = { version = "==1.19.0", extras = ["eval"] }
+google-adk = { version = ">=1.19.0", extras = ["eval"] }
 a2a-sdk = "^0.2.16"
 google-cloud-aiplatform = { extras = [
   "adk",
@@ -23,7 +23,10 @@ pydantic = "^2.10.6"
 python-dotenv = "^1.0.1"
 opencv-python-headless = "^4.9.0"
 numpy = "^1.26.0"
-pillow = "^10.3.0"
+pillow = ">=12.1.1"
+
+[tool.bandit]
+exclude_dirs = ["tests"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"

@@ -8,7 +8,6 @@ requires-python = ">=3.10"
 
 [tool.poetry]
 packages = [{ include = "receipt_preprocessor" }]
-include = ["receipt_preprocessor/.env"]
 
 [tool.poetry.dependencies]
 python = ">=3.10"

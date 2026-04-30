@@ -20,20 +20,20 @@ _FALLBACK_RESPONSE = {
 }
 
 
-def classify_receipt(tool_context: ToolContext) -> dict:
+def classify_receipt(image_uri: str, tool_context: ToolContext) -> dict:
     """Classifies the receipt image as DOMESTIC_RETAIL, OVERSEAS, NON_RETAIL, or NON_RECEIPT.
 
-    Reads original_image_uri from session state.
-    Writes receipt_type and store_category to session state.
+    Accepts the image URI from the agent (GCS gs:// or local path).
+    Writes original_image_uri, receipt_type, and store_category to session state.
     """
-    image_uri = tool_context.state.get("original_image_uri")
     if not image_uri:
         return {
             "type": "NON_RECEIPT",
             "store_category": "OTHER",
             "confidence": 0.0,
-            "reason": "No image URI in session state",
+            "reason": "No image URI provided",
         }
+    tool_context.state["original_image_uri"] = image_uri
 
     client = genai.Client()
     response = client.models.generate_content(

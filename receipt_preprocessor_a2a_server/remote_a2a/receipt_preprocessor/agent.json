@@ -1,0 +1,24 @@
+{
+  "name": "receipt_preprocessor",
+  "description": "Pre-processes receipt images before Azure OCR: validates retail category, scores quality, corrects perspective.",
+  "url": "http://localhost:8001/a2a/receipt_preprocessor",
+  "version": "1.0.0",
+  "defaultInputModes": ["image/jpeg", "image/png", "image/heic"],
+  "defaultOutputModes": ["application/json"],
+  "capabilities": {
+    "streaming": false,
+    "functions": true
+  },
+  "skills": [
+    {
+      "id": "preprocess_receipt",
+      "name": "Preprocess Receipt",
+      "description": "Validates, scores, and corrects a receipt image before Azure OCR processing.",
+      "tags": ["receipt", "ocr", "preprocessing", "validation"],
+      "examples": [
+        "gs://my-bucket/receipts/img001.jpg",
+        "Preprocess this receipt image before OCR"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 # --- reject_tool ---
 
 
@@ -53,3 +55,23 @@ def test_upload_to_gcs():
     mock_blob.upload_from_string.assert_called_once_with(
         b"image_data", content_type="image/jpeg"
     )
+
+
+def test_download_invalid_uri_raises():
+    from receipt_preprocessor.tools.gcs_utils import download_from_gcs
+
+    with pytest.raises(ValueError, match="gs://"):
+        download_from_gcs("my-bucket/path/img.jpg")
+
+
+def test_download_gcs_api_error_raises_runtime():
+    from google.api_core.exceptions import GoogleAPICallError
+
+    from receipt_preprocessor.tools.gcs_utils import download_from_gcs
+
+    with patch("receipt_preprocessor.tools.gcs_utils.storage.Client") as mock_cls:
+        mock_cls.return_value.bucket.return_value.blob.return_value.download_as_bytes.side_effect = GoogleAPICallError(
+            "404 Not Found"
+        )
+        with pytest.raises(RuntimeError, match="GCS download failed"):
+            download_from_gcs("gs://my-bucket/missing.jpg")

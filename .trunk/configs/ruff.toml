@@ -1,5 +1,17 @@
-# Generic, formatter-friendly config.
-select = ["B", "D3", "E", "F"]
+# https://docs.astral.sh/ruff/configuration/
 
-# Never enforce `E501` (line length violations). This should be handled by formatters.
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+[lint]
+# Enable flake8-bugbear (`B`) rules, in addition to the defaults.
+select = ["E4", "E7", "E9", "F", "B"]
+
+# Avoid enforcing line-length violations (`E501`)
 ignore = ["E501"]
+
+[lint.per-file-ignores]
+# Don't complaine about unused imports in __init__.py
+"__init__.py" = ["F401", "F403"]
+".bandit" = ["B018", "F821"]     # Allow use of assert in bandit config files.

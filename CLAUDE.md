@@ -25,29 +25,41 @@ source .venv/bin/activate
 cp receipt_preprocessor/.env.sample receipt_preprocessor/.env   # then fill in required values
 ```
 
-### Run locally (Google ADK)
+### Run locally with Google ADK
 
 ```bash
 adk run receipt_preprocessor   # CLI session against the root SequentialAgent
 adk web                        # web UI for interactive testing
 ```
 
-### Deploy to Vertex AI
+### Run tests
+
+```bash
+pytest
+```
+
+### Build
+
+```bash
+uv build
+```
+
+### Deploy to Vertex AI Agent Engine
 
 ```bash
 python deploy/deploy.py   # uploads wheel + requirements.txt, prints resource name
+```
+
+### Run local A2A server
+
+```bash
+adk api_server receipt_preprocessor_a2a_server --port 8001
 ```
 
 ### Test remote A2A agent
 
 ```bash
 python test_client/remote_test.py
-```
-
-### Run tests
-
-```bash
-pytest
 ```
 
 ## Architecture
@@ -60,15 +72,15 @@ receipt_preprocessor (SequentialAgent)
 ├── before_agent_callback: set_session()
 │   └── resets pipeline state and injects session_id + timestamp
 │
-├── ValidityGateAgent
+├── ValidityGateAgent                 [hard gate]
 │   ├── classify_receipt(image_uri)
 │   └── rejects unless receipt type is DOMESTIC_RETAIL
 │
-├── QualityGateAgent
+├── QualityGateAgent                  [hard gate]
 │   ├── score_image_quality(image_uri)
 │   └── rejects when quality_score < QUALITY_THRESHOLD
 │
-├── GeometryAgent
+├── GeometryAgent                     [soft gate]
 │   ├── detect_corners(image_uri)
 │   ├── apply_perspective_correction(image_uri, corners)
 │   └── upload_to_gcs(image_bytes, path)
@@ -102,48 +114,58 @@ receipt_preprocessor (SequentialAgent)
 [Azure OCR: v1/receipts/validate]
 ```
 
-## Rejection Codes
+## Returned Rejection Codes
 
-| Code               | Layer  | Meaning                                 |
-| ------------------ | ------ | --------------------------------------- |
-| `FILE_INVALID`     | Mobile | Unsupported file type or invalid size   |
-| `DUPLICATE`        | Mobile | Duplicate receipt upload                |
-| `REFUND_RECEIPT`   | Mobile | Refund or return receipt                |
-| `NON_RECEIPT`      | Cloud  | Image is not a receipt                  |
-| `OVERSEAS_RECEIPT` | Cloud  | Receipt is not domestic                 |
-| `NON_RETAIL`       | Cloud  | Receipt is not from supported retail    |
-| `QUALITY_LOW`      | Cloud  | Image quality is below threshold        |
-| `GEOMETRY_FAILED`  | Cloud  | Perspective correction failed; log only |
+These codes may be returned to the React Native app.
 
-`GEOMETRY_FAILED` is a soft failure. The agent should pass the original image through instead of rejecting the request.
+| Code               | Layer  | Meaning                               |
+| ------------------ | ------ | ------------------------------------- |
+| `FILE_INVALID`     | Mobile | Unsupported file type or invalid size |
+| `DUPLICATE`        | Mobile | Duplicate receipt upload              |
+| `REFUND_RECEIPT`   | Mobile | Refund or return receipt              |
+| `NON_RECEIPT`      | Cloud  | Image is not a receipt                |
+| `OVERSEAS_RECEIPT` | Cloud  | Receipt is not domestic               |
+| `NON_RETAIL`       | Cloud  | Receipt is not from supported retail  |
+| `QUALITY_LOW`      | Cloud  | Image quality is below threshold      |
+
+## Internal Log-only Codes
+
+These codes are for observability only and must not reject the request by themselves.
+
+| Code              | Meaning                                 |
+| ----------------- | --------------------------------------- |
+| `GEOMETRY_FAILED` | Perspective correction failed; log only |
+
+`GEOMETRY_FAILED` is a soft failure. The agent must pass the original image through instead of rejecting the request.
 
 ## Session State Keys
 
-| Key                   | Set by                 | Consumed by                      |
-| --------------------- | ---------------------- | -------------------------------- |
-| `session_id`          | `set_session` callback | GCS path, PackagingAgent         |
-| `timestamp`           | `set_session` callback | logging                          |
-| `original_image_uri`  | ValidityGateAgent      | QualityGate, GeometryAgent       |
-| `receipt_type`        | ValidityGateAgent      | PackagingAgent                   |
-| `store_category`      | ValidityGateAgent      | PackagingAgent                   |
-| `quality_score`       | QualityGateAgent       | logging, PackagingAgent          |
-| `quality_issues`      | QualityGateAgent       | logging                          |
-| `corrected_image_uri` | GeometryAgent          | PackagingAgent                   |
-| `geometry_corrected`  | GeometryAgent          | PackagingAgent                   |
-| `rejection_code`      | `reject_with_code()`   | `skip_if_rejected`, app response |
-| `rejection_message`   | `reject_with_code()`   | app response                     |
-| `azure_payload`       | PackagingAgent         | app / Azure upload chain         |
+| Key                   | Set by                         | Consumed by                              |
+| --------------------- | ------------------------------ | ---------------------------------------- |
+| `session_id`          | `set_session` callback         | GCS path, PackagingAgent                 |
+| `timestamp`           | `set_session` callback         | logging                                  |
+| `original_image_uri`  | input / request initialization | ValidityGate, QualityGate, GeometryAgent |
+| `receipt_type`        | ValidityGateAgent              | PackagingAgent                           |
+| `store_category`      | ValidityGateAgent              | PackagingAgent                           |
+| `quality_score`       | QualityGateAgent               | logging, PackagingAgent                  |
+| `quality_issues`      | QualityGateAgent               | logging                                  |
+| `corrected_image_uri` | GeometryAgent                  | PackagingAgent                           |
+| `geometry_corrected`  | GeometryAgent                  | PackagingAgent                           |
+| `rejection_code`      | `reject_with_code()`           | `skip_if_rejected`, app response         |
+| `rejection_message`   | `reject_with_code()`           | app response                             |
+| `azure_payload`       | PackagingAgent                 | app / Azure upload chain                 |
 
 ## Configuration (`receipt_preprocessor/.env`)
 
-| Variable                | Default            | Purpose                                       |
-| ----------------------- | ------------------ | --------------------------------------------- |
-| `GOOGLE_CLOUD_PROJECT`  | —                  | GCP project for Vertex AI and GCS             |
-| `GOOGLE_CLOUD_LOCATION` | `us-central1`      | Vertex AI location                            |
-| `GCS_BUCKET_NAME`       | —                  | Temporary bucket for corrected receipt images |
-| `QUALITY_THRESHOLD`     | `6`                | Minimum acceptable quality score, 0–10        |
-| `GENAI_MODEL`           | `gemini-2.5-flash` | Common Gemini model for all agents            |
-| `GCS_IMAGE_TTL_DAYS`    | `7`                | Retention period for temporary GCS images     |
+| Variable                    | Default            | Required | Purpose                                       |
+| --------------------------- | ------------------ | :------: | --------------------------------------------- |
+| `GOOGLE_GENAI_USE_VERTEXAI` | `1`                |    ✓     | Use Vertex AI through Google GenAI SDK        |
+| `GOOGLE_CLOUD_PROJECT`      | —                  |    ✓     | GCP project for Vertex AI and GCS             |
+| `GOOGLE_CLOUD_LOCATION`     | `us-central1`      |          | Vertex AI location                            |
+| `GCS_BUCKET_NAME`           | —                  |    ✓     | Temporary bucket for corrected receipt images |
+| `QUALITY_THRESHOLD`         | `6`                |          | Minimum acceptable quality score, 0–10        |
+| `GENAI_MODEL`               | `gemini-2.5-flash` |          | Common Gemini model for all agents            |
+| `GCS_IMAGE_TTL_DAYS`        | `7`                |          | Retention period for temporary GCS images     |
 
 ## Key Files
 
@@ -204,6 +226,17 @@ The agent should return one of the following JSON-compatible results.
 
 ## Agent Behavior Rules
 
+### Global Rules
+
+- Keep Azure OCR integration unchanged.
+- The cloud agent receives only images that passed mobile pre-flight checks.
+- Do not move mobile pre-flight rules into the cloud agent unless explicitly requested.
+- Rejection responses must stay stable because the React Native app depends on code values.
+- Prefer deterministic tool code over prompt-only behavior where possible.
+- Keep prompts narrow, schema-oriented, and explicit about output shape.
+- Add tests around every rejection code before changing gate behavior.
+- Avoid over-engineering the first version. Ship the baseline pipeline first.
+
 ### ValidityGateAgent
 
 - Classify the image into exactly one receipt type:
@@ -213,6 +246,7 @@ The agent should return one of the following JSON-compatible results.
   - `NON_RECEIPT`
 
 - Only `DOMESTIC_RETAIL` may continue.
+
 - Map non-passing classifications to rejection codes:
   - `OVERSEAS` → `OVERSEAS_RECEIPT`
   - `NON_RETAIL` → `NON_RETAIL`
@@ -220,9 +254,12 @@ The agent should return one of the following JSON-compatible results.
 
 - Store `receipt_type` and `store_category` in session state.
 
+- Do not infer unsupported categories as domestic retail just because the image contains a Korean receipt.
+
 ### QualityGateAgent
 
 - Score image quality from `0` to `10`.
+
 - Detect quality issues from:
   - `blur`
   - `overexposed`
@@ -231,7 +268,10 @@ The agent should return one of the following JSON-compatible results.
   - `low_res`
 
 - Reject with `QUALITY_LOW` when `quality_score < QUALITY_THRESHOLD`.
+
 - Store `quality_score` and `quality_issues` in session state.
+
+- Do not reject for minor skew or perspective distortion. GeometryAgent handles that later.
 
 ### GeometryAgent
 
@@ -242,14 +282,20 @@ The agent should return one of the following JSON-compatible results.
   - bottom-left
 
 - If corners are detected, apply perspective correction and upload the corrected image to GCS.
-- If corners are not detected, do not reject. Set `corrected_image_uri` to `original_image_uri` or let PackagingAgent fall back to the original.
-- Log geometry failure as `GEOMETRY_FAILED`, but treat it as a soft failure.
+
+- If corners are not detected, do not reject.
+
+- When correction fails, log `GEOMETRY_FAILED` and pass the original image through.
+
+- Set `geometry_corrected` to:
+  - `true` when a corrected image was successfully generated and uploaded
+  - `false` when the original image is passed through
 
 ### PackagingAgent
 
 - Build the final Azure-compatible payload.
 - Use `corrected_image_uri` when present.
-- Fall back to `original_image_uri` when perspective correction was skipped.
+- Fall back to `original_image_uri` when perspective correction was skipped or failed.
 - Include:
   - image URL
   - store category
@@ -287,23 +333,36 @@ Use the smallest test level that can verify the behavior.
 ### Required Fixture Categories
 
 - valid domestic mart receipt
+- valid convenience store receipt
+- valid supermarket receipt
 - skewed receipt
 - blurry receipt
+- overexposed receipt
+- underexposed receipt
 - overseas receipt
+- non-retail receipt
 - non-receipt image such as business card or menu
 - refund receipt
 
-## Development Guidelines
+## Definition of Done
 
-- Keep Azure OCR integration unchanged.
-- Do not move mobile pre-flight rules into the cloud agent unless explicitly requested.
-- Do not reject when only geometry correction fails.
-- Prefer deterministic tool code over prompt-only behavior where possible.
-- Keep prompts narrow and schema-oriented.
-- Keep rejection responses stable because the React Native app depends on the code values.
-- Add tests around every rejection code before changing gate behavior.
-- Avoid over-engineering the first version. Ship the baseline pipeline first:
-  1. validity gate
-  2. quality gate
-  3. geometry soft correction
-  4. payload packaging
+- `pytest` passes.
+
+- `adk run receipt_preprocessor` returns PASS for a valid domestic retail receipt.
+
+- `adk run receipt_preprocessor` returns REJECT for:
+  - `NON_RECEIPT`
+  - `OVERSEAS_RECEIPT`
+  - `NON_RETAIL`
+  - `QUALITY_LOW`
+
+- Geometry correction failure does not reject the request.
+
+- PASS response includes:
+  - `correctedImageUrl`
+  - `storeCategory`
+  - `preprocessMeta.sessionId`
+  - `preprocessMeta.qualityScore`
+  - `preprocessMeta.corrected`
+
+- A2A test client can call the agent and receive JSON output.

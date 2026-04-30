@@ -193,24 +193,30 @@ adk web    # Cloud Shell automatically proxies the port — click the URL it pri
 
 ## Rejection codes
 
-| Code               | Layer | Meaning                                                          |
-| ------------------ | ----- | ---------------------------------------------------------------- |
-| `NON_RECEIPT`      | Cloud | Image is not a receipt                                           |
-| `OVERSEAS_RECEIPT` | Cloud | Receipt is not domestic                                          |
-| `NON_RETAIL`       | Cloud | Receipt is not from supported retail                             |
-| `QUALITY_LOW`      | Cloud | Image quality is below threshold                                 |
-| `GEOMETRY_FAILED`  | Cloud | Perspective correction failed (soft — logged only, not returned) |
+| Code               | Layer | Meaning                              |
+| ------------------ | ----- | ------------------------------------ |
+| `NON_RECEIPT`      | Cloud | Image is not a receipt               |
+| `OVERSEAS_RECEIPT` | Cloud | Receipt is not domestic              |
+| `NON_RETAIL`       | Cloud | Receipt is not from supported retail |
+| `QUALITY_LOW`      | Cloud | Image quality is below threshold     |
+
+## Internal log-only codes
+
+| Code              | Meaning                                                         |
+| ----------------- | --------------------------------------------------------------- |
+| `GEOMETRY_FAILED` | Perspective correction failed; original image is passed through |
 
 ## Configuration reference (`receipt_preprocessor/.env`)
 
-| Variable                | Default            | Required | Purpose                                       |
-| ----------------------- | ------------------ | :------: | --------------------------------------------- |
-| `GOOGLE_CLOUD_PROJECT`  | —                  |    ✓     | GCP project for Vertex AI and GCS             |
-| `GOOGLE_CLOUD_LOCATION` | `us-central1`      |          | Vertex AI region                              |
-| `GCS_BUCKET_NAME`       | —                  |    ✓     | Temporary bucket for corrected receipt images |
-| `QUALITY_THRESHOLD`     | `6`                |          | Minimum acceptable quality score (0–10)       |
-| `GENAI_MODEL`           | `gemini-2.5-flash` |          | Gemini model used by all vision tools         |
-| `GCS_IMAGE_TTL_DAYS`    | `7`                |          | Retention period for temporary GCS images     |
+| Variable                    | Default            | Required | Purpose                                       |
+| --------------------------- | ------------------ | :------: | --------------------------------------------- |
+| `GOOGLE_GENAI_USE_VERTEXAI` | `1`                |    ✓     | Use Vertex AI through Google GenAI SDK        |
+| `GOOGLE_CLOUD_PROJECT`      | —                  |    ✓     | GCP project for Vertex AI and GCS             |
+| `GOOGLE_CLOUD_LOCATION`     | `us-central1`      |          | Vertex AI region                              |
+| `GCS_BUCKET_NAME`           | —                  |    ✓     | Temporary bucket for corrected receipt images |
+| `QUALITY_THRESHOLD`         | `6`                |          | Minimum acceptable quality score (0–10)       |
+| `GENAI_MODEL`               | `gemini-2.5-flash` |          | Gemini model used by all vision tools         |
+| `GCS_IMAGE_TTL_DAYS`        | `7`                |          | Retention period for temporary GCS images     |
 
 ## Tests
 

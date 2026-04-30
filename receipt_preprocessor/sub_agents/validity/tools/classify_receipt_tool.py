@@ -1,4 +1,5 @@
 import json
+import mimetypes
 import os
 import re
 
@@ -8,8 +9,20 @@ from google.genai import types as genai_types
 
 from receipt_preprocessor import config
 
+_FALLBACK_RESPONSE = {
+    "type": "NON_RECEIPT",
+    "store_category": "OTHER",
+    "confidence": 0.0,
+    "reason": "Gemini response could not be parsed",
+}
+
 
 def _extract_json(text: str) -> dict:
+    # First try to locate a JSON object directly (handles preamble text and single backticks)
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        return json.loads(match.group())
+    # Fall back to stripping triple-backtick fences
     text = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`").strip()
     return json.loads(text)
 
@@ -33,11 +46,13 @@ def classify_receipt(tool_context: ToolContext) -> dict:
     with open(policy_path) as f:
         policy = json.load(f)
 
+    mime_type = mimetypes.guess_type(image_uri)[0] or "image/jpeg"
+
     client = genai.Client()
     response = client.models.generate_content(
         model=config.GENAI_MODEL,
         contents=[
-            genai_types.Part.from_uri(file_uri=image_uri, mime_type="image/jpeg"),
+            genai_types.Part.from_uri(file_uri=image_uri, mime_type=mime_type),
             f"""Classify this image as a receipt for the 영끌 Korean retail reward app.
 
 Domestic retail keywords (DOMESTIC_RETAIL): {policy['retail_keywords_ko']}
@@ -59,7 +74,17 @@ Respond ONLY with valid JSON, no markdown:
         ],
     )
 
-    result = _extract_json(response.text)
-    tool_context.state["receipt_type"] = result["type"]
-    tool_context.state["store_category"] = result["store_category"]
+    try:
+        result = _extract_json(response.text)
+        receipt_type = result.get("type", "NON_RECEIPT")
+        store_category = result.get("store_category", "OTHER")
+    except (json.JSONDecodeError, AttributeError):
+        result = _FALLBACK_RESPONSE.copy()
+        receipt_type = "NON_RECEIPT"
+        store_category = "OTHER"
+
+    tool_context.state["receipt_type"] = receipt_type
+    tool_context.state["store_category"] = store_category
+    result["type"] = receipt_type
+    result["store_category"] = store_category
     return result

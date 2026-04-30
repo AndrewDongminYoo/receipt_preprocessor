@@ -132,3 +132,29 @@ def test_apply_perspective_produces_valid_jpeg():
     assert isinstance(result, bytes)
     reopened = Image.open(io.BytesIO(result))
     assert reopened.format == "JPEG"
+
+
+def test_correct_and_upload_soft_gate_on_gcs_error():
+    """When GCS download raises, the soft gate must pass original_image_uri through."""
+    from receipt_preprocessor.sub_agents.geometry.tools.correct_perspective_tool import (
+        correct_and_upload,
+    )
+
+    ctx = MagicMock()
+    ctx.state = {
+        "original_image_uri": "gs://bucket/tilted.jpg",
+        "session_id": "test-session-err",
+    }
+    corners = [[10, 10], [190, 10], [190, 290], [10, 290]]
+
+    with patch(
+        "receipt_preprocessor.sub_agents.geometry.tools.correct_perspective_tool.download_from_gcs",
+        side_effect=RuntimeError("GCS download failed"),
+    ):
+        result = correct_and_upload(corners, ctx)
+
+    assert result["corrected"] is False
+    assert result["corrected_image_uri"] == "gs://bucket/tilted.jpg"
+    assert result.get("error") == "GEOMETRY_FAILED"
+    assert ctx.state["geometry_corrected"] is False
+    assert ctx.state["corrected_image_uri"] == "gs://bucket/tilted.jpg"

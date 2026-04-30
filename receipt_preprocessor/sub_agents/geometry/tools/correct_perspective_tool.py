@@ -8,7 +8,7 @@ from google.adk.tools.tool_context import ToolContext
 from PIL import Image
 
 from receipt_preprocessor import config
-from receipt_preprocessor.tools.gcs_utils import download_from_gcs, upload_to_gcs
+from receipt_preprocessor.tools.gcs_utils import read_image_bytes, upload_to_gcs
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def correct_and_upload(corners: Optional[list], tool_context: ToolContext) -> di
         return {"corrected_image_uri": image_uri, "corrected": False}
 
     try:
-        image_bytes = download_from_gcs(image_uri)
+        image_bytes = read_image_bytes(image_uri)
         corrected_bytes = _apply_perspective(image_bytes, corners)
         date_str = date.today().strftime("%Y%m%d")
         blob_path = f"{date_str}/{session_id}/corrected.jpg"

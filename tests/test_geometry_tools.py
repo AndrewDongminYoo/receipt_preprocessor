@@ -80,7 +80,7 @@ def test_correct_and_upload_with_valid_corners():
     corners = [[10, 10], [190, 10], [190, 290], [10, 290]]
 
     with patch(
-        "receipt_preprocessor.sub_agents.geometry.tools.correct_perspective_tool.download_from_gcs",
+        "receipt_preprocessor.sub_agents.geometry.tools.correct_perspective_tool.read_image_bytes",
         return_value=image_bytes,
     ):
         with patch(
@@ -120,6 +120,36 @@ def test_correct_and_upload_passes_original_when_no_corners():
     assert ctx.state["geometry_corrected"] is False
 
 
+def test_correct_and_upload_with_local_path(tmp_path):
+    """Local file paths must be readable for perspective correction."""
+    from receipt_preprocessor.sub_agents.geometry.tools.correct_perspective_tool import (
+        correct_and_upload,
+    )
+
+    local_file = tmp_path / "receipt.jpg"
+    local_file.write_bytes(_make_jpeg_bytes())
+
+    ctx = MagicMock()
+    ctx.state = {
+        "original_image_uri": str(local_file),
+        "session_id": "test-session-local",
+    }
+    corners = [[10, 10], [190, 10], [190, 290], [10, 290]]
+
+    with patch(
+        "receipt_preprocessor.sub_agents.geometry.tools.correct_perspective_tool.upload_to_gcs",
+        return_value="gs://bucket/20260430/test-session-local/corrected.jpg",
+    ):
+        result = correct_and_upload(corners, ctx)
+
+    assert result["corrected"] is True
+    assert (
+        result["corrected_image_uri"]
+        == "gs://bucket/20260430/test-session-local/corrected.jpg"
+    )
+    assert ctx.state["geometry_corrected"] is True
+
+
 def test_apply_perspective_produces_valid_jpeg():
     from receipt_preprocessor.sub_agents.geometry.tools.correct_perspective_tool import (
         _apply_perspective,
@@ -148,7 +178,7 @@ def test_correct_and_upload_soft_gate_on_gcs_error():
     corners = [[10, 10], [190, 10], [190, 290], [10, 290]]
 
     with patch(
-        "receipt_preprocessor.sub_agents.geometry.tools.correct_perspective_tool.download_from_gcs",
+        "receipt_preprocessor.sub_agents.geometry.tools.correct_perspective_tool.read_image_bytes",
         side_effect=RuntimeError("GCS download failed"),
     ):
         result = correct_and_upload(corners, ctx)

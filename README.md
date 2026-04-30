@@ -1,7 +1,6 @@
 # receipt_preprocessor
 
-A **SequentialAgent** pipeline built with [Google ADK](https://google.github.io/adk-docs/) that
-pre-processes receipt images before they reach the Youngkeul Azure OCR backend.
+A **SequentialAgent** pipeline built with [Google ADK](https://google.github.io/adk-docs/) that pre-processes receipt images before they reach the Youngkeul Azure OCR backend.
 
 ## How it works
 
@@ -150,7 +149,7 @@ gcloud storage buckets create gs://${PROJECT_ID}-receipt-preprocessor-bucket \
 
 # Grant the Vertex AI service account write access to the bucket
 PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
-SA_EMAIL="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+SA_EMAIL="service-${PROJECT_NUMBER}@gcp-sa-aiplatform.iam.gserviceaccount.com"
 gcloud beta services identity create \
   --service=aiplatform.googleapis.com --project=${PROJECT_NUMBER}
 gcloud projects add-iam-policy-binding ${PROJECT_ID} \

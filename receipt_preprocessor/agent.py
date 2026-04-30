@@ -27,7 +27,7 @@ _PIPELINE_STATE_KEYS = (
 def set_session(callback_context: CallbackContext) -> None:
     """Resets pipeline state and injects a fresh session_id and timestamp before each turn."""
     for key in _PIPELINE_STATE_KEYS:
-        callback_context.state.pop(key, None)
+        callback_context.state[key] = None
     callback_context.state["session_id"] = str(uuid.uuid4())
     callback_context.state["timestamp"] = datetime.datetime.now(
         ZoneInfo("UTC")

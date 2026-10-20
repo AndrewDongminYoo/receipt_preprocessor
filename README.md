@@ -53,6 +53,9 @@ receipt_preprocessor  (SequentialAgent)
 
 ## Setup
 
+The default installation includes the receipt pipeline and A2A server dependencies.
+ADK evaluation extras are excluded because their NLTK dependency has an unpatched model-artifact path traversal vulnerability (GHSA-8mgp-746c-j5xp).
+
 ```bash
 uv sync
 source .venv/bin/activate

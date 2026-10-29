@@ -1,0 +1,12 @@
+[[IgnoredVulns]]
+id = "GHSA-xcq7-p3pf-p88h"
+reason = """
+opentelemetry-api@1.41.1 has no compatible patched upgrade under the declared ADK dependencies as of 2026-10-29.
+The first patched version is 1.45.1, but google-adk@2.5.0 limits the API and SDK to <=1.42.1, and the latest published ADK 2.13.0 still limits both to <=1.44.
+Dependency evidence: uv tree --locked --invert --package opentelemetry-api shows paths through google-adk and opentelemetry-sdk.
+Reachability evidence: searching application Python sources for opentelemetry, propagat, and tracestate found no matches; the installed ADK Agent Engine propagator passes only traceparent to extract().
+Managed-runtime reachability remains unverified; this exception accepts the compatibility-blocked risk rather than asserting non-reachability.
+Approved by AndrewDongminYoo on 2026-10-29 for the currently locked opentelemetry-api@1.41.1.
+Re-evaluation owner: AndrewDongminYoo; review on every ADK dependency update.
+Remove this entry when an official ADK release allows opentelemetry-api>=1.45.1 with a compatible SDK, and update uv.lock and requirements.txt together.
+"""

@@ -235,7 +235,10 @@ pytest
 # 1. Build the wheel
 uv build
 
-# 2. Deploy (reads receipt_preprocessor/.env for project/bucket config)
+# 2. Export runtime dependencies without the local project or development packages
+uv export --locked --no-hashes --no-emit-project --no-dev --output-file requirements.txt
+
+# 3. Deploy (reads receipt_preprocessor/.env for project/bucket config)
 python deploy/deploy.py
 ```
 

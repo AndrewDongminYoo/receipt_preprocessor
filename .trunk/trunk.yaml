@@ -7,7 +7,7 @@ cli:
 plugins:
   sources:
     - id: trunk
-      ref: v1.8.0
+      ref: v1.11.0
       uri: https://github.com/trunk-io/plugins
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
@@ -22,14 +22,16 @@ lint:
     - actionlint@1.7.8
     - bandit@1.9.4
     - black@26.10.1
-    - checkov@3.3.29
+    - checkov@3.3.30
     - dotenv-linter@4.0.0
     - git-diff-check
     - isort@9.0.2
-    - markdownlint@0.49.1
+    - markdownlint@0.50.0
     - osv-scanner@2.3.5
+    - pinact@4.1.1!:
+        commands: [lint, upgrade]
     - prettier@3.9.10
-    - ruff@0.17.1
+    - ruff@0.17.3
     - svgo@4.1.0
     - taplo@0.10.0
     - trufflehog@3.95.2

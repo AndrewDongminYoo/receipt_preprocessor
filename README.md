@@ -44,7 +44,7 @@ receipt_preprocessor  (SequentialAgent)
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - [uv](https://github.com/astral-sh/uv) package manager
 - Google Cloud project with these APIs enabled:
   - Vertex AI API
